@@ -1,0 +1,93 @@
+[
+  {
+    "rule_id": 1,
+    "group": "web-sg",
+    "protocol": "tcp",
+    "port": "80",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 2,
+    "group": "web-sg",
+    "protocol": "tcp",
+    "port": "22",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 3,
+    "group": "db-sg",
+    "protocol": "tcp",
+    "port": "3306",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 4,
+    "group": "web-sg",
+    "protocol": "tcp",
+    "port": "443",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 5,
+    "group": "admin-sg",
+    "protocol": "tcp",
+    "port": "22",
+    "source": "203.0.113.5/32"
+  },
+  {
+    "rule_id": 6,
+    "group": "app-sg",
+    "protocol": "all",
+    "port": "all",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 7,
+    "group": "db-sg",
+    "protocol": "tcp",
+    "port": "5432",
+    "source": "10.0.0.0/8"
+  },
+  {
+    "rule_id": 8,
+    "group": "web-sg",
+    "protocol": "tcp",
+    "port": "80",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 9,
+    "group": "app-sg",
+    "protocol": "tcp",
+    "port": "8080",
+    "source": "999.1.1.1/24"
+  },
+  {
+    "rule_id": 10,
+    "group": "admin-sg",
+    "protocol": "tcp",
+    "port": "3389",
+    "source": "0.0.0.0/0"
+  },
+  {
+    "rule_id": 11,
+    "group": "app-sg",
+    "protocol": "tcp",
+    "port": "70000",
+    "source": "192.168.1.0/24"
+  },
+  {
+    "rule_id": 12,
+    "group": "db-sg",
+    "protocol": "tcp",
+    "port": "1433",
+    "source": "198.51.100.0/24"
+  },
+  {
+    "rule_id": 13,
+    "group": "app-sg",
+    "protocol": "tcp",
+    "port": "8080",
+    "source": "192.168.1.0/24"
+  }
+]

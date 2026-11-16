@@ -1,0 +1,15 @@
+rule_id,group,protocol,port,source,severity,finding,recommendation,compliance_ref,score
+2,web-sg,tcp,22,0.0.0.0/0,High,SSH open to the internet,Limit source to a trusted IP or VPN,CIS AWS Foundations (no SG ingress from 0.0.0.0/0 to remote admin ports); NIST SP 800-53 SC-7,3
+3,db-sg,tcp,3306,0.0.0.0/0,High,MySQL open to the internet,Limit source to a trusted IP or VPN,PCI DSS Req. 1 (restrict access to data systems); NIST SP 800-53 SC-7,3
+6,app-sg,all,all,0.0.0.0/0,High,Allow-all rule,Restrict to required protocols and ports,PCI DSS Req. 1 (allow only necessary traffic); NIST SP 800-53 SC-7,3
+10,admin-sg,tcp,3389,0.0.0.0/0,High,RDP open to the internet,Limit source to a trusted IP or VPN,CIS AWS Foundations (no SG ingress from 0.0.0.0/0 to remote admin ports); NIST SP 800-53 SC-7,3
+1,web-sg,tcp,80,0.0.0.0/0,Medium,Port open to the internet,Confirm this port needs public access,NIST SP 800-53 SC-7 (boundary protection); least privilege,2
+4,web-sg,tcp,443,0.0.0.0/0,Medium,Port open to the internet,Confirm this port needs public access,NIST SP 800-53 SC-7 (boundary protection); least privilege,2
+7,db-sg,tcp,5432,10.0.0.0/8,Medium,Wide CIDR range,Narrow the source range to specific subnets,Least privilege; PCI DSS Req. 1,2
+8,web-sg,tcp,80,0.0.0.0/0,Medium,Port open to the internet,Confirm this port needs public access,NIST SP 800-53 SC-7 (boundary protection); least privilege,2
+8,web-sg,tcp,80,0.0.0.0/0,Low,Duplicate rule,Remove the repeated rule,Configuration hygiene / change management,1
+9,app-sg,tcp,8080,999.1.1.1/24,Invalid,Invalid CIDR 999.1.1.1/24,Fix the rule data,Input validation / data integrity,0
+11,app-sg,tcp,70000,192.168.1.0/24,Invalid,Invalid port 70000,Fix the rule data,Input validation / data integrity,0
+5,admin-sg,tcp,22,203.0.113.5/32,Safe,No issue found,None,Compliant with least privilege,0
+12,db-sg,tcp,1433,198.51.100.0/24,Safe,No issue found,None,Compliant with least privilege,0
+13,app-sg,tcp,8080,192.168.1.0/24,Safe,No issue found,None,Compliant with least privilege,0
