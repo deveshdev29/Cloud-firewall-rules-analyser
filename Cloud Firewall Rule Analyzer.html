@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cloud Firewall Rule Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f7;--surface:#fff;--ink:#14202b;--muted:#5b6b79;--line:#d9e0e6;--accent:#0f4c81;--accent-ink:#fff;
+  --high:#c8372d;--medium:#b86e00;--low:#1f7fa8;--invalid:#6b7280;--safe:#2f8f4e;
+  color-scheme:light;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e151c;--surface:#16212b;--ink:#e6edf3;--muted:#98a8b6;--line:#2a3a48;--accent:#6fb0ec;--accent-ink:#0e151c;
+    --high:#ff6b60;--medium:#f0a63a;--low:#5bb8dc;--invalid:#9ca3af;--safe:#5cc07a;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e151c;--surface:#16212b;--ink:#e6edf3;--muted:#98a8b6;--line:#2a3a48;--accent:#6fb0ec;--accent-ink:#0e151c;
+  --high:#ff6b60;--medium:#f0a63a;--low:#5bb8dc;--invalid:#9ca3af;--safe:#5cc07a;color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:24px 20px 48px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 22px;max-width:70ch}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.card h2{font-size:15px;margin:0 0 10px}
+textarea{width:100%;height:340px;resize:vertical;font:12.5px/1.5 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:10px}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+button,.btn{font:inherit;font-weight:600;font-size:14px;border-radius:6px;padding:8px 14px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover,.btn:hover{border-color:var(--accent)}
+button:focus-visible,.btn:focus-within,textarea:focus-visible,.chip:focus-visible,.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn input{position:absolute;opacity:0;width:0;height:0}
+.err{margin-top:10px;padding:10px 12px;border-radius:6px;border:1px solid var(--high);color:var(--high);font-size:14px}
+.hint{color:var(--muted);font-size:13px;margin:10px 0 0}
+.stack{display:grid;gap:20px}
+.summary{display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.score{font-size:44px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.score small{display:block;font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0;margin-bottom:4px}
+.counts{display:flex;flex-wrap:wrap;gap:8px 18px}
+.counts span{display:inline-flex;align-items:center;gap:6px;font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.High{--c:var(--high)}.Medium{--c:var(--medium)}.Low{--c:var(--low)}.Invalid{--c:var(--invalid)}.Safe{--c:var(--safe)}
+.strip{display:flex;flex-wrap:wrap;gap:6px}
+.tile{--c:var(--invalid);min-width:50px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);border-left:5px solid var(--c);
+  background:color-mix(in srgb,var(--c) 14%,var(--surface));color:var(--ink);font-size:12.5px;font-weight:600;text-align:left;line-height:1.25}
+.tile small{display:block;font-weight:400;color:var(--muted);font-size:11.5px}
+.tile[aria-pressed="true"]{outline:2px solid var(--ink)}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.g{border:1px solid var(--line);border-radius:8px;padding:12px}
+.g b{font-size:15px}.g .sc{float:right;font-weight:700;font-size:18px}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line);margin:10px 0 6px}
+.bar i{background:var(--c)}
+.rating{font-size:13px;font-weight:600;color:var(--c)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center}
+.chip{padding:5px 11px;font-size:13px;border-radius:999px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;padding:6px 10px;border-bottom:1px solid var(--line)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.m{font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+.sev{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--c);
+  border:1px solid var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface))}
+.ref{color:var(--muted);font-size:12.5px;margin-top:3px}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.hd h2{margin:0}
+#csv{width:100%;height:160px;margin-top:10px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cloud firewall rule analyzer</h1>
+  <p class="sub">Paste security-group rules, or load the sample set. Each rule is validated, checked for risk, scored, and mapped to a security standard.</p>
+
+  <div class="layout">
+    <section class="card" aria-label="Rules input">
+      <h2>Rules (JSON)</h2>
+      <textarea id="input" spellcheck="false" aria-label="Firewall rules as JSON"></textarea>
+      <div class="row">
+        <button class="primary" id="go">Analyze rules</button>
+        <button id="sample">Load sample</button>
+        <label class="btn">Upload JSON<input type="file" id="file" accept=".json,application/json"></label>
+      </div>
+      <div class="err" id="err" role="alert" hidden></div>
+      <p class="hint">Each rule needs <span class="m">rule_id</span>, <span class="m">group</span>, <span class="m">protocol</span>, <span class="m">port</span> and <span class="m">source</span>. Everything runs in your browser; nothing is uploaded.</p>
+    </section>
+
+    <div class="stack" id="results" hidden>
+      <section class="card" aria-label="Summary">
+        <div class="summary">
+          <div class="score"><small>Environment risk score</small><span id="envScore">0</span></div>
+          <div>
+            <div class="counts" id="counts"></div>
+            <div class="hint" id="sumLine"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Rules at a glance">
+        <h2>Every rule, by its most severe finding</h2>
+        <div class="strip" id="strip"></div>
+        <p class="hint">Select a rule to see only its findings.</p>
+      </section>
+
+      <section class="card" aria-label="Security groups">
+        <h2>Risk by security group</h2>
+        <div class="groups" id="groups"></div>
+      </section>
+
+      <section class="card" aria-label="Findings">
+        <div class="hd">
+          <h2>Findings</h2>
+          <button id="csvBtn">Copy CSV</button>
+        </div>
+        <div class="chips" id="chips"></div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Rule</th><th>Group</th><th>Protocol / port</th><th>Source</th><th>Severity</th><th>Finding and standard</th><th>Recommendation</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <textarea id="csv" readonly hidden aria-label="CSV report"></textarea>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLE=[
+ {rule_id:1,group:"web-sg",protocol:"tcp",port:"80",source:"0.0.0.0/0"},
+ {rule_id:2,group:"web-sg",protocol:"tcp",port:"22",source:"0.0.0.0/0"},
+ {rule_id:3,group:"db-sg",protocol:"tcp",port:"3306",source:"0.0.0.0/0"},
+ {rule_id:4,group:"web-sg",protocol:"tcp",port:"443",source:"0.0.0.0/0"},
+ {rule_id:5,group:"admin-sg",protocol:"tcp",port:"22",source:"203.0.113.5/32"},
+ {rule_id:6,group:"app-sg",protocol:"all",port:"all",source:"0.0.0.0/0"},
+ {rule_id:7,group:"db-sg",protocol:"tcp",port:"5432",source:"10.0.0.0/8"},
+ {rule_id:8,group:"web-sg",protocol:"tcp",port:"80",source:"0.0.0.0/0"},
+ {rule_id:9,group:"app-sg",protocol:"tcp",port:"8080",source:"999.1.1.1/24"},
+ {rule_id:10,group:"admin-sg",protocol:"tcp",port:"3389",source:"0.0.0.0/0"},
+ {rule_id:11,group:"app-sg",protocol:"tcp",port:"70000",source:"192.168.1.0/24"},
+ {rule_id:12,group:"db-sg",protocol:"tcp",port:"1433",source:"198.51.100.0/24"},
+ {rule_id:13,group:"app-sg",protocol:"tcp",port:"8080",source:"192.168.1.0/24"}
+];
+const VALID_PROTOCOLS=["tcp","udp","icmp","all"];
+const REQUIRED=["rule_id","group","protocol","port","source"];
+const RISKY_PORTS={"22":"SSH","3389":"RDP","3306":"MySQL","5432":"PostgreSQL","1433":"SQL Server"};
+const ADMIN_PORTS=["22","3389"];
+const SCORE={High:3,Medium:2,Low:1,Safe:0,Invalid:0};
+const ORDER={High:0,Medium:1,Low:2,Invalid:3,Safe:4};
+const SEVS=["High","Medium","Low","Invalid","Safe"];
+const COMPLIANCE={
+ admin:"CIS AWS Foundations (no SG ingress from 0.0.0.0/0 to remote admin ports); NIST SP 800-53 SC-7",
+ database:"PCI DSS Req. 1 (restrict access to data systems); NIST SP 800-53 SC-7",
+ allow_all:"PCI DSS Req. 1 (allow only necessary traffic); NIST SP 800-53 SC-7",
+ public_port:"NIST SP 800-53 SC-7 (boundary protection); least privilege",
+ wide_cidr:"Least privilege; PCI DSS Req. 1",
+ duplicate:"Configuration hygiene / change management",
+ invalid:"Input validation / data integrity",
+ safe:"Compliant with least privilege"
+};
+
+/* ---------- Module 1: validation ---------- */
+function validV4(a){const p=a.split(".");return p.length===4&&p.every(x=>/^\d{1,3}$/.test(x)&&+x<=255)}
+function validV6(a){
+  if(!/^[0-9a-fA-F:]+$/.test(a))return false;
+  const h=a.split("::");if(h.length>2)return false;
+  const g=h.map(x=>x===""?[]:x.split(":"));
+  if(!g.flat().every(x=>/^[0-9a-fA-F]{1,4}$/.test(x)))return false;
+  const n=g.flat().length;
+  return h.length===2?n<8:n===8;
+}
+function prefixLen(s){            /* prefix length, or null if not a valid CIDR */
+  const parts=String(s).trim().split("/");
+  if(parts.length>2)return null;
+  const v6=parts[0].includes(":"),max=v6?128:32;
+  if(!(v6?validV6(parts[0]):validV4(parts[0])))return null;
+  if(parts.length===1)return max;
+  return /^\d+$/.test(parts[1])&&+parts[1]<=max?+parts[1]:null;
+}
+const validPort=p=>p==="all"||(/^\d+$/.test(p)&&+p>=1&&+p<=65535);
+function validateRule(r){
+  const e=[];
+  if(prefixLen(r.source)===null)e.push(`Invalid CIDR ${r.source}`);
+  if(!validPort(r.port))e.push(`Invalid port ${r.port}`);
+  if(!VALID_PROTOCOLS.includes(r.protocol))e.push(`Invalid protocol ${r.protocol}`);
+  return e;
+}
+function normalize(r){
+  const n={rule_id:r.rule_id,group:String(r.group),protocol:String(r.protocol).toLowerCase(),
+    port:String(r.port).toLowerCase(),source:String(r.source)};
+  n.errors=validateRule(n);n.valid=n.errors.length===0;return n;
+}
+
+/* ---------- Module 2: checks ---------- */
+const finding=(severity,finding,recommendation,compliance)=>({severity,finding,recommendation,compliance});
+function analyzeRule(r){
+  const f=[],pl=prefixLen(r.source);
+  if(r.protocol==="all"&&r.port==="all")
+    f.push(finding("High","Allow-all rule","Restrict to required protocols and ports","allow_all"));
+  if(pl===0){
+    if(RISKY_PORTS[r.port])
+      f.push(finding("High",`${RISKY_PORTS[r.port]} open to the internet`,"Limit source to a trusted IP or VPN",
+        ADMIN_PORTS.includes(r.port)?"admin":"database"));
+    else if(r.port!=="all")
+      f.push(finding("Medium","Port open to the internet","Confirm this port needs public access","public_port"));
+  }else if(pl<=16){
+    f.push(finding("Medium","Wide CIDR range","Narrow the source range to specific subnets","wide_cidr"));
+  }
+  return f;
+}
+function findDuplicates(rules){
+  const seen=new Set(),dup=new Set();
+  for(const r of rules){
+    const k=JSON.stringify([r.group,r.protocol,r.port,r.source]);
+    if(seen.has(k))dup.add(r.rule_id);else seen.add(k);
+  }
+  return dup;
+}
+
+/* ---------- Module 3 + 4: scoring and compliance ---------- */
+function analyzeAll(rules){
+  const dup=findDuplicates(rules.filter(r=>r.valid)),rows=[];
+  for(const r of rules){
+    let f;
+    if(!r.valid)f=[finding("Invalid",r.errors.join("; "),"Fix the rule data","invalid")];
+    else{
+      f=analyzeRule(r);
+      if(dup.has(r.rule_id))f.push(finding("Low","Duplicate rule","Remove the repeated rule","duplicate"));
+      if(!f.length)f=[finding("Safe","No issue found","None","safe")];
+    }
+    for(const x of f)rows.push({rule_id:r.rule_id,group:r.group,protocol:r.protocol,port:r.port,source:r.source,
+      ...x,score:SCORE[x.severity],compliance_ref:COMPLIANCE[x.compliance]});
+  }
+  return rows.sort((a,b)=>ORDER[a.severity]-ORDER[b.severity]||String(a.rule_id).localeCompare(String(b.rule_id),undefined,{numeric:true}));
+}
+const rate=s=>s>=6?"High risk":s>=3?"Medium risk":"Low risk";
+const rateSev=s=>s>=6?"High":s>=3?"Medium":"Safe";
+function worstPerRule(rows){
+  const m=new Map();
+  for(const r of rows){const c=m.get(r.rule_id);if(!c||ORDER[r.severity]<ORDER[c.severity])m.set(r.rule_id,r)}
+  return [...m.values()];
+}
+function scoreGroups(rows){
+  const m=new Map();
+  for(const r of rows)m.set(r.group,(m.get(r.group)||0)+r.score);
+  return [...m].map(([group,score])=>({group,score})).sort((a,b)=>b.score-a.score);
+}
+
+/* ---------- UI ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const state={rows:[],sev:"all",rule:null};
+
+function run(){
+  const err=$("#err");err.hidden=true;
+  try{
+    let list;
+    try{list=JSON.parse($("#input").value)}catch(e){throw new Error(`This is not valid JSON: ${e.message}`)}
+    if(!Array.isArray(list))throw new Error("The JSON must be a list of rules.");
+    if(!list.length)throw new Error("The list has no rules.");
+    list.forEach((r,i)=>{
+      if(r===null||typeof r!=="object")throw new Error(`Rule number ${i+1} is not an object.`);
+      const miss=REQUIRED.filter(k=>!(k in r));
+      if(miss.length)throw new Error(`Rule number ${i+1} is missing: ${miss.join(", ")}`);
+    });
+    state.rows=analyzeAll(list.map(normalize));
+    state.sev="all";state.rule=null;
+    render();
+  }catch(e){
+    err.textContent=e.message;err.hidden=false;$("#results").hidden=true;
+  }
+}
+
+function render(){
+  const rows=state.rows,worst=worstPerRule(rows);
+  const n=Object.fromEntries(SEVS.map(s=>[s,worst.filter(r=>r.severity===s).length]));
+  const risky=n.High+n.Medium+n.Low;
+  $("#results").hidden=false;
+  $("#envScore").textContent=rows.reduce((a,r)=>a+r.score,0);
+  $("#counts").innerHTML=SEVS.map(s=>`<span class="${s}"><i class="dot"></i>${n[s]} ${s.toLowerCase()}</span>`).join("");
+  $("#sumLine").textContent=`${worst.length} rules analyzed, ${risky} risky, ${n.Invalid} invalid, ${n.Safe} safe.`;
+
+  $("#strip").innerHTML=worst.sort((a,b)=>String(a.rule_id).localeCompare(String(b.rule_id),undefined,{numeric:true}))
+    .map(r=>`<button class="tile ${r.severity}" data-rule="${esc(r.rule_id)}" aria-pressed="${String(state.rule)===String(r.rule_id)}">Rule ${esc(r.rule_id)}<small>${esc(r.group)}</small></button>`).join("");
+
+  const gs=scoreGroups(rows);
+  $("#groups").innerHTML=gs.map(g=>{
+    const w=worst.filter(r=>r.group===g.group),tot=w.length;
+    const seg=["High","Medium","Low","Invalid","Safe"].map(s=>{const c=w.filter(r=>r.severity===s).length;
+      return c?`<i class="${s}" style="width:${c/tot*100}%" title="${c} ${s.toLowerCase()}"></i>`:""}).join("");
+    const rs=rateSev(g.score);
+    return `<div class="g"><span class="sc">${g.score}</span><b>${esc(g.group)}</b>
+      <div class="bar">${seg}</div><div class="rating ${rs}">${rate(g.score)}</div>
+      <div class="hint" style="margin:2px 0 0">${tot} rule${tot===1?"":"s"}</div></div>`}).join("");
+
+  const counts=Object.fromEntries(SEVS.map(s=>[s,rows.filter(r=>r.severity===s).length]));
+  $("#chips").innerHTML=[["all",`All (${rows.length})`],...SEVS.map(s=>[s,`${s} (${counts[s]})`])]
+    .map(([k,l])=>`<button class="chip" data-sev="${k}" aria-pressed="${state.sev===k}">${l}</button>`).join("")
+    +(state.rule!==null?`<button class="chip" data-clear="1">Rule ${esc(state.rule)} ✕ clear</button>`:"");
+
+  const shown=rows.filter(r=>(state.sev==="all"||r.severity===state.sev)&&(state.rule===null||String(r.rule_id)===String(state.rule)));
+  $("#rows").innerHTML=shown.length?shown.map(r=>`<tr>
+    <td>${esc(r.rule_id)}</td><td>${esc(r.group)}</td><td class="m">${esc(r.protocol)} / ${esc(r.port)}</td>
+    <td class="m">${esc(r.source)}</td><td><span class="sev ${r.severity}">${r.severity}</span></td>
+    <td>${esc(r.finding)}<div class="ref">${esc(r.compliance_ref)}</div></td><td>${esc(r.recommendation)}</td></tr>`).join("")
+    :`<tr><td colspan="7" class="hint">No findings match this filter.</td></tr>`;
+}
+
+function toCsv(){
+  const cols=["rule_id","group","protocol","port","source","severity","finding","recommendation","compliance_ref","score"];
+  const q=v=>/[",\n]/.test(String(v))?`"${String(v).replace(/"/g,'""')}"`:String(v);
+  return [cols.join(","),...state.rows.map(r=>cols.map(c=>q(r[c])).join(","))].join("\n");
+}
+
+$("#go").onclick=run;
+$("#sample").onclick=()=>{$("#input").value=JSON.stringify(SAMPLE,null,2);run()};
+$("#file").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{$("#input").value=rd.result;run()};
+  rd.readAsText(f);e.target.value="";
+};
+$("#strip").onclick=e=>{
+  const b=e.target.closest("[data-rule]");if(!b)return;
+  state.rule=String(state.rule)===b.dataset.rule?null:b.dataset.rule;render();
+};
+$("#chips").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.clear)state.rule=null;else state.sev=b.dataset.sev;
+  render();
+};
+$("#csvBtn").onclick=async()=>{
+  const box=$("#csv"),btn=$("#csvBtn");
+  box.value=toCsv();box.hidden=false;box.select();
+  try{await navigator.clipboard.writeText(box.value);btn.textContent="Copied"}
+  catch(_){btn.textContent="Select all and copy"}
+  setTimeout(()=>btn.textContent="Copy CSV",2000);
+};
+
+$("#input").value=JSON.stringify(SAMPLE,null,2);
+run();
+</script>
+</body>
+</html>
